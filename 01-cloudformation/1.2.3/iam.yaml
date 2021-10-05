@@ -1,0 +1,22 @@
+Resources:
+  User:
+    Type: AWS::IAM::User
+    Properties:
+      Path: "/"
+      LoginProfile:
+        Password: !Ref Password
+      UserName: !Ref Username
+      ManagedPolicyArns:
+        - !ImportValue PolicyArn
+Description: 'User and policy to read from all S3.'
+
+Parameters:
+  Password:
+    NoEcho: true
+    Type: String
+    Default: 'uphohMan7haekiv$%9ah'
+    Description: 'Password'
+  Username:
+    Default: 'kpu-lab-02-1-user'
+    Type: String
+    Description: 'Username'
