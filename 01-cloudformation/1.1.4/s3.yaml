@@ -1,0 +1,27 @@
+Resources:
+  MyS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+      BucketName: !If
+        - PrefferedRegion
+        - !Join
+          - '-'
+          - - !Ref 'AWS::AccountId'
+            - !Ref BucketName
+        - !Join
+          - '-'
+          - - !Ref 'AWS::Region'
+            - !Ref BucketName        
+Description: 'Example s3 bucket with params'
+
+Conditions:
+  PrefferedRegion: !Equals
+    - !Ref AWS::Region
+    - 'us-east-2'
+
+Parameters:
+  BucketName:
+    Default: 'kpu-01-lab'
+    Description: 'Name of the Bucket to create (globally-unique)'
+    Type: String
