@@ -1,0 +1,36 @@
+Resources:
+  User:
+    Type: AWS::IAM::User
+    Properties:
+      Path: "/"
+      LoginProfile:
+        Password: !Ref Password
+      UserName: !Ref Username
+  Policy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - 
+            Action:
+              - s3:ListBucket
+              - s3:ListAllMyBuckets
+              - s3:GetObject
+            Effect: Allow
+            Resource:
+              - arn:aws:s3:::*
+      Users:
+        - !Ref User
+Description: 'User and policy to read from all S3.'
+
+Parameters:
+  Password:
+    NoEcho: true
+    Type: String
+    Default: 'uphohMan7haekiv$%9ah'
+    Description: 'Password'
+  Username:
+    Default: 'kpu-lab-02-user'
+    Type: String
+    Description: 'Username'

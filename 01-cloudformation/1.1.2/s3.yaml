@@ -1,0 +1,13 @@
+Resources:
+  MyS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Ref: BucketName
+Description: 'Example s3 bucket with params'
+
+Parameters:
+  BucketName:
+    Default: 'kpu-01-lab'
+    Description: 'Name of the Bucket to create (globally-unique)'
+    Type: String
