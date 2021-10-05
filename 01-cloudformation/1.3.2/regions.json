@@ -1,0 +1,16 @@
+{
+    "Regions": [
+        {
+            "RegionName": "us-east-2"
+        },
+        {
+            "RegionName": "us-east-1"
+        },
+        {
+            "RegionName": "us-west-1"
+        },
+        {
+            "RegionName": "us-west-2"
+        }
+    ]
+}
