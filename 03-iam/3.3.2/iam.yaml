@@ -1,0 +1,34 @@
+Resources:
+  Bucket1:
+    Type: AWS::S3::Bucket
+  Bucket2:
+    Type: AWS::S3::Bucket
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement: 
+          - Effect: Allow
+            Principal: 
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:user/karol.pucynski.labs
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: Policy
+          PolicyDocument:
+            Statement:
+              - Sid: BucketRO
+                Effect: Allow
+                Action:
+                  - s3:Get*
+                  - s3:List*
+                Resource:
+                  - !GetAtt Bucket1.Arn
+                  - !Sub ${Bucket1.Arn}/*
+              - Sid: BucketRW
+                Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !GetAtt Bucket2.Arn
+                  - !Sub ${Bucket2.Arn}/*
