@@ -1,0 +1,135 @@
+Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SSH-ICMP
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: icmp
+          FromPort: 8
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: user
+          Value: karol.pucynski.labs
+        - Key: stelligent-u-lesson
+          Value: '5.2'
+        - Key: stelligent-u-lab
+          Value: '5'
+
+  Instance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          files: "/opt/aws/amazon-cloudwatch-agent/bin/config.json"
+    Properties:
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      IamInstanceProfile: !Ref InstanceProfile
+      Tags:
+        - Key: user
+          Value: karol.pucynski.labs
+        - Key: stelligent-u-lesson
+          Value: '5.2'
+        - Key: stelligent-u-lab
+          Value: '5'
+  EIP:
+    Type: AWS::EC2::EIP
+  EIPAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId: !Ref 'Instance'
+      EIP: !Ref 'EIP'
+
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: Stelligent-U-Template
+      LaunchTemplateData:
+        InstanceType: t2.micro
+        ImageId: ami-01685d240b8fbbfeb
+        SecurityGroups:
+          - !Ref SecurityGroup
+        KeyName: kpu-labs
+        UserData:
+           Fn::Base64: !Sub |
+             #!/usr/bin/env bash
+             export CLOUDWATCH_CONFIG_FILE_DIRECTORY="/opt/aws/amazon-cloudwatch-agent/bin/config.json"
+             apt-get update -y
+             apt-get install unzip -y
+             wget https://s3.amazonaws.com/amazoncloudwatch-agent/linux/amd64/latest/AmazonCloudWatchAgent.zip
+ 
+             unzip AmazonCloudWatchAgent.zip
+             sudo ./install.sh
+ 
+             cat <<EOT >> $CLOUDWATCH_CONFIG_FILE_DIRECTORY
+             {
+               "agent": {
+                   "metrics_collection_interval": 60,
+                   "run_as_user": "cwagent"
+               },
+               "metrics": {
+                   "append_dimensions": {
+                     "AutoScalingGroupName": "\${!aws:AutoScalingGroupName}",
+                     "ImageId": "\${!aws:ImageId}",
+                     "InstanceId": "\${!aws:InstanceId}",
+                     "InstanceType": "\${!aws:InstanceType}"
+                   },
+                   "metrics_collected": {
+                     "disk": {
+                       "measurement": [
+                         "used_percent"
+                     ],
+                     "metrics_collection_interval": 60,
+                       "resources": [
+                           "*"
+                     ]
+                   },
+                   "mem": {
+                       "measurement": [
+                         "mem_used_percent"
+                       ],
+                       "metrics_collection_interval": 60
+                   }
+                 }
+               }
+             }
+             EOT
+             sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:"$CLOUDWATCH_CONFIG_FILE_DIRECTORY" -s
+             sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status
+             /opt/aws/bin/cfn-signal -e $?
+
+  IamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+
+  InstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Roles:
+        - !Ref IamRole
+
+Outputs:
+  Instance:
+    Value: !Ref Instance
+  PrivateIp:
+    Value: !GetAtt Instance.PrivateIp
+  PublicIp:
+    Value: !Ref 'EIP'
+
